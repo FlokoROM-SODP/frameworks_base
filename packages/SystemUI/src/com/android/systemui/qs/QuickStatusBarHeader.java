@@ -22,15 +22,18 @@ import static com.android.systemui.util.InjectionInflationController.VIEW_CONTEX
 import android.annotation.ColorInt;
 import android.app.ActivityManager;
 import android.app.AlarmManager;
+import android.content.BroadcastReceiver;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.media.AudioManager;
+import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
@@ -81,6 +84,7 @@ import com.android.systemui.qs.QSDetail.Callback;
 import com.android.systemui.qs.carrier.QSCarrierGroup;
 import com.android.systemui.settings.BrightnessController;
 import com.android.systemui.statusbar.CommandQueue;
+import com.android.systemui.statusbar.info.DataUsageView;
 import com.android.systemui.statusbar.phone.StatusBarIconController;
 import com.android.systemui.statusbar.phone.StatusBarIconController.TintedIconManager;
 import com.android.systemui.statusbar.phone.StatusBarWindowView;
@@ -137,6 +141,8 @@ public class QuickStatusBarHeader extends RelativeLayout implements
             "system:" + Settings.System.QS_BATTERY_LOCATION;
     public static final String STATUS_BAR_CUSTOM_HEADER =
             "system:" + Settings.System.STATUS_BAR_CUSTOM_HEADER;
+    public static final String QS_DATAUSAGE =
+            "system:" + Settings.System.QS_DATAUSAGE;
 
     private final NextAlarmController mAlarmController;
     private final ZenModeController mZenController;
@@ -165,6 +171,11 @@ public class QuickStatusBarHeader extends RelativeLayout implements
 
     private int mRingerMode = AudioManager.RINGER_MODE_NORMAL;
     private AlarmManager.AlarmClockInfo mNextAlarm;
+
+    // Data Usage
+    private View mDataUsageLayout;
+    private ImageView mDataUsageImage;
+    private DataUsageView mDataUsageView;
 
     private ImageView mNextAlarmIcon;
     /** {@link TextView} containing the actual text indicating when the next alarm will go off. */
@@ -206,6 +217,8 @@ public class QuickStatusBarHeader extends RelativeLayout implements
     private float mExpandedHeaderAlpha = 1.0f;
     private float mKeyguardExpansionFraction;
     private boolean mPrivacyChipLogged = false;
+    private int mQSDataUsage = 0;
+    private boolean mRegistered;
 
     private PrivacyItemController.Callback mPICCallback = new PrivacyItemController.Callback() {
         @Override
@@ -323,6 +336,13 @@ public class QuickStatusBarHeader extends RelativeLayout implements
             mDateView.setOnClickListener(this);
         mSpace = findViewById(R.id.space);
 
+        mDataUsageLayout = findViewById(R.id.daily_data_usage_layout);
+        mDataUsageImage = findViewById(R.id.daily_data_usage_icon);
+        mDataUsageView = findViewById(R.id.data_sim_usage);
+        // Set the correct tint for the data usage icons so they contrast
+        mDataUsageImage.setImageTintList(ColorStateList.valueOf(fillColor));
+        updateDataUsageView();
+
         // Tint for the battery icons are handled in setupHost()
         mBatteryRemainingIcon = findViewById(R.id.batteryRemainingIcon);
         mBatteryIcon = findViewById(R.id.batteryIcon);
@@ -345,7 +365,8 @@ public class QuickStatusBarHeader extends RelativeLayout implements
                 STATUS_BAR_BATTERY_STYLE,
                 QS_BATTERY_STYLE,
                 QS_BATTERY_LOCATION,
-                STATUS_BAR_CUSTOM_HEADER);
+                STATUS_BAR_CUSTOM_HEADER,
+                QS_DATAUSAGE);
     }
 
     public QuickQSPanel getHeaderQsPanel() {
@@ -527,6 +548,47 @@ public class QuickStatusBarHeader extends RelativeLayout implements
         mClockView.useWallpaperTextColor(shouldUseWallpaperTextColor);
     }
 
+    private final BroadcastReceiver mIntentReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (action == null) return;
+            if (action.equals(ConnectivityManager.CONNECTIVITY_ACTION)) {
+                updateDataUsageView();
+            }
+        }
+    };
+
+    private void registerDataUsageView() {
+        if (mQSDataUsage != 0 && !mRegistered) {
+            mRegistered = true;
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+            mContext.registerReceiver(mIntentReceiver, filter);
+        } else if (mQSDataUsage == 0 && mRegistered) {
+            mRegistered = false;
+            mContext.unregisterReceiver(mIntentReceiver);
+        }
+    }
+
+    private void updateDataUsageView() {
+        if (mQSDataUsage != 0 && mDataUsageView.isConnected()) {
+            mDataUsageView.updateUsageData(mQSDataUsage);
+            mDataUsageLayout.setVisibility(View.VISIBLE);
+            mDataUsageImage.setVisibility(View.VISIBLE);
+            mDataUsageView.setVisibility(View.VISIBLE);
+            if (mDataUsageView.isWiFiConnected()) {
+                mDataUsageImage.setImageDrawable(mContext.getDrawable(R.drawable.ic_data_usage_wifi));
+            } else {
+                mDataUsageImage.setImageDrawable(mContext.getDrawable(R.drawable.ic_data_usage_cellular));
+            }
+        } else {
+            mDataUsageView.setVisibility(View.GONE);
+            mDataUsageImage.setVisibility(View.GONE);
+            mDataUsageLayout.setVisibility(View.GONE);
+        }
+    }
+
     private void updateStatusIconAlphaAnimator() {
         mStatusIconsAlphaAnimator = new TouchAnimator.Builder()
                 .addFloat(mQuickQsStatusIcons, "alpha", 1, 0, 0)
@@ -622,6 +684,8 @@ public class QuickStatusBarHeader extends RelativeLayout implements
         });
         mStatusBarIconController.addIconGroup(mIconManager);
         requestApplyInsets();
+        registerDataUsageView();
+        updateDataUsageView();
     }
 
     @Override
@@ -961,6 +1025,12 @@ public class QuickStatusBarHeader extends RelativeLayout implements
                 mHeaderImageEnabled =
                         TunerService.parseIntegerSwitch(newValue, false);
                 updateResources();
+                break;
+            case QS_DATAUSAGE:
+                mQSDataUsage =
+                        TunerService.parseInteger(newValue, 0);
+                registerDataUsageView();
+                updateDataUsageView();
                 break;
             default:
                 break;

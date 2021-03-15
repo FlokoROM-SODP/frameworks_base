@@ -243,4 +243,8 @@
     <string name="status_bar_location">Місцезнаходження</string>
     <!-- Name of the microphone status bar icon. -->
     <string name="status_bar_microphone">Мікрофон</string>
+    <!-- Biometric Dialog - Use Face -->
+    <string name="biometric_dialog_button_use_face">Використати Обличчя</string>
+    <!-- Daily data usage -->
+    <string name="daily_data_usage_title">Сьогоднішнє використання</string>
 </resources>
