@@ -123,7 +123,7 @@
     <string name="text_clock_m_six">E sei</string>
     <string name="text_clock_m_seven">E sette</string>
     <string name="text_clock_m_eight">E otto</string>
-    <string name="text_clock_m_nine">E nove</string>
+    <string name="text_clock_m_nine">Nove minuti</string>
     <string name="text_clock_m_ten">Dieci</string>
     <string name="text_clock_m_eleven">Undici</string>
     <string name="text_clock_m_twelve">Dodici</string>
@@ -196,7 +196,7 @@
     <string name="tristate_rotation_90">Orizzontale (90°)</string>
     <string name="tristate_rotation_270">Orizzontale (270°)</string>
     <!-- Screenrecorder -->
-    <string name="screenrecord_stopdot_label">Mostra punto per fermare\nPressione prolungata per spostarlo</string>
+    <string name="screenrecord_stopdot_label">Mostra punto per terminare\nPremi a lungo per spostarlo</string>
     <string name="screenrecord_lowquality_label">Qualità inferiore per dimensioni più piccole del file</string>
     <!-- Name of the camera status bar icon. -->
     <string name="status_bar_camera">Fotocamera</string>
@@ -207,5 +207,12 @@
     <!-- Biometric Dialog - Use Face -->
     <string name="biometric_dialog_button_use_face">Usa il viso</string>
     <!-- Daily data usage -->
-    <string name="daily_data_usage_title">Today\'s usage</string>
+    <string name="daily_data_usage_title">Utilizzo di oggi</string>
+    <!-- App Lock -->
+    <string name="applock_locked">&#160;is locked</string>
+    <string name="applock_fingerprint_face">, fingerprint or your face to unlock</string>
+    <string name="applock_face">&#160;or your face to unlock</string>
+    <string name="applock_fingerprint">&#160;or your fingerprint to unlock</string>
+    <string name="applock_credential">&#160;to unlock</string>
+    <string name="applock_unlock">Unlock</string>
 </resources>
