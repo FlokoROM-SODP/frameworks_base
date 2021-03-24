@@ -20,6 +20,8 @@ import android.annotation.IntDef;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.content.Context;
+import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.graphics.PixelFormat;
 import android.hardware.biometrics.BiometricAuthenticator;
 import android.hardware.biometrics.BiometricConstants;
@@ -50,6 +52,8 @@ import com.android.systemui.keyguard.WakefulnessLifecycle;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+
+import lineageos.app.LineageContextConstants;
 
 /**
  * Top level container/controller for the BiometricPrompt UI.
@@ -83,6 +87,7 @@ public class AuthContainerView extends LinearLayout
     private final Interpolator mLinearOutSlowIn;
     @VisibleForTesting final BiometricCallback mBiometricCallback;
     private final CredentialCallback mCredentialCallback;
+    private final PackageManager mPackageManager;
 
     @VisibleForTesting final FrameLayout mFrameLayout;
     @VisibleForTesting @Nullable AuthBiometricView mBiometricView;
@@ -93,6 +98,8 @@ public class AuthContainerView extends LinearLayout
     private final View mPanelView;
 
     private final float mTranslationY;
+
+    private static boolean mHasFod;
 
     @VisibleForTesting final WakefulnessLifecycle mWakefulnessLifecycle;
 
@@ -274,6 +281,9 @@ public class AuthContainerView extends LinearLayout
 
         mPanelView = mInjector.getPanelView(mFrameLayout);
         mPanelController = mInjector.getPanelController(mContext, mPanelView);
+
+        mPackageManager = mContext.getPackageManager();
+        mHasFod = mPackageManager.hasSystemFeature(LineageContextConstants.Features.FOD);
 
         // Inflate biometric view only if necessary.
         if (Utils.isBiometricAllowed(mConfig.mBiometricPromptBundle)) {
@@ -633,10 +643,14 @@ public class AuthContainerView extends LinearLayout
                 WindowManager.LayoutParams.TYPE_STATUS_BAR_SUB_PANEL,
                 windowFlags,
                 PixelFormat.TRANSLUCENT);
-        lp.privateFlags |= WindowManager.LayoutParams.SYSTEM_FLAG_SHOW_FOR_ALL_USERS;
+        lp.privateFlags |= WindowManager.LayoutParams.SYSTEM_FLAG_SHOW_FOR_ALL_USERS
+                | WindowManager.LayoutParams.SYSTEM_FLAG_HIDE_NON_SYSTEM_OVERLAY_WINDOWS;
         lp.setFitInsetsTypes(lp.getFitInsetsTypes() & ~WindowInsets.Type.ime());
         lp.setTitle("BiometricPrompt");
         lp.token = windowToken;
+        if (mHasFod) {
+            lp.screenOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+        }
         return lp;
     }
 }
