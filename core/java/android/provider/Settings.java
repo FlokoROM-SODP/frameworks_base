@@ -4892,6 +4892,24 @@ public final class Settings {
         public static final String BLUETOOTH_SHOW_BATTERY = "bluetooth_show_battery";
 
         /**
+         * Whether to display VoLTE icon when VoLTE present
+         * @hide
+         */
+        public static final String VOLTE_ICON_STYLE = "volte_icon_style";
+
+        /**
+         * VoWiFi icon style
+         * @hide
+         */
+        public static final String VOWIFI_ICON_STYLE = "vowifi_icon_style";
+
+        /**
+         * Whether VoWiFi icon should override VoLTE icon
+         * @hide
+         */
+        public static final String VOLTE_VOWIFI_OVERRIDE = "volte_vowifi_override";
+
+        /**
          * Whether to display roaming indicator for roaming signal connection
          * @hide
          */
@@ -5225,6 +5243,12 @@ public final class Settings {
          */
         public static final String SCREENSHOT_SOUND = "screenshot_sound";
 
+        /**
+         * Screenshot image compression
+         * @hide
+         */
+        public static final String SCREENSHOT_COMPRESSION = "screenshot_compression";
+
         /** @hide */
         public static final String AUDIO_PANEL_VIEW_TIMEOUT = "audio_panel_view_timeout";
 
@@ -5458,6 +5482,12 @@ public final class Settings {
         public static final String QS_PANEL_BG_USE_NEW_TINT = "qs_panel_bg_use_new_tint";
 
         /**
+         * Whether to use dark icons for QS tiles
+         * @hide
+         */
+        public static final String QS_PANEL_ICONS_PRIMARY_COLOR = "qs_panel_icons_primary_color";
+
+        /**
          * Show Settings icon in QS Footer
          * @hide
          */
@@ -5561,6 +5591,18 @@ public final class Settings {
          * @hide
          */
         public static final String SCREEN_OFF_ANIMATION = "screen_off_animation";
+
+        /**
+         * Control how to handle the display cutout
+         * @hide
+         */
+        public static final String DISPLAY_CUTOUT_MODE = "display_cutout_mode";
+
+        /**
+         * Control how to handle the display cutout
+         * @hide
+         */
+        public static final String STOCK_STATUSBAR_IN_HIDE = "stock_statusbar_in_hide";
 
         /**
          * Keys we no longer back up under the current schema, but want to continue to
