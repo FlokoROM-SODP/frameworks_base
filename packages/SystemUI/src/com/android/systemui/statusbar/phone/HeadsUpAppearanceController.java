@@ -55,8 +55,8 @@ public class HeadsUpAppearanceController implements OnHeadsUpChangedListener,
     private final HeadsUpManagerPhone mHeadsUpManager;
     private final NotificationStackScrollLayout mStackScroller;
     private final HeadsUpStatusBarView mHeadsUpStatusBarView;
+    private final View mCenteredView;
     private final View mCenteredIconView;
-    private final LinearLayout mCenterClock;
     private final LinearLayout mCustomIconArea;
     private final View mOperatorNameView;
     private final DarkIconDispatcher mDarkIconDispatcher;
@@ -108,9 +108,9 @@ public class HeadsUpAppearanceController implements OnHeadsUpChangedListener,
                 notificationShadeView.findViewById(R.id.notification_stack_scroller),
                 notificationPanelViewController,
                 statusBarView.findViewById(R.id.clock),
-                statusBarView.findViewById(R.id.center_clock_layout),
                 statusBarView.findViewById(R.id.left_icon_area),
                 statusBarView.findViewById(R.id.operator_name_frame),
+                statusBarView.findViewById(R.id.centered_area),
                 statusBarView.findViewById(R.id.centered_icon_area));
     }
 
@@ -127,14 +127,15 @@ public class HeadsUpAppearanceController implements OnHeadsUpChangedListener,
             NotificationStackScrollLayout stackScroller,
             NotificationPanelViewController notificationPanelViewController,
             View clockView,
-            LinearLayout CenterClock,
-            LinearLayout CustomIconArea,
+            LinearLayout customIconArea,
             View operatorNameView,
+            View centeredView,
             View centeredIconView) {
         mNotificationIconAreaController = notificationIconAreaController;
         mHeadsUpManager = headsUpManager;
         mHeadsUpManager.addListener(this);
         mHeadsUpStatusBarView = headsUpStatusBarView;
+        mCenteredView = centeredView;
         mCenteredIconView = centeredIconView;
         headsUpStatusBarView.setOnDrawingRectChangedListener(
                 () -> updateIsolatedIconLocation(true /* requireUpdate */));
@@ -146,8 +147,7 @@ public class HeadsUpAppearanceController implements OnHeadsUpChangedListener,
         mStackScroller.addOnExpandedHeightChangedListener(mSetExpandedHeight);
         mStackScroller.addOnLayoutChangeListener(mStackScrollLayoutChangeListener);
         mStackScroller.setHeadsUpAppearanceController(this);
-        mCenterClock = CenterClock;
-        mCustomIconArea = CustomIconArea;
+        mCustomIconArea = customIconArea;
         mOperatorNameView = operatorNameView;
         mDarkIconDispatcher = Dependency.get(DarkIconDispatcher.class);
         mDarkIconDispatcher.addDarkReceiver(this);
@@ -287,8 +287,12 @@ public class HeadsUpAppearanceController implements OnHeadsUpChangedListener,
                 updateParentClipping(false /* shouldClip */);
                 mHeadsUpStatusBarView.setVisibility(View.VISIBLE);
                 show(mHeadsUpStatusBarView);
-                hide(mCustomIconArea, View.INVISIBLE);
-                hide(mCenterClock, View.INVISIBLE);
+                if (mCustomIconArea.getVisibility() != View.GONE) {
+                    hide(mCustomIconArea, View.INVISIBLE);
+                }
+                if (mCenteredView.getVisibility() != View.GONE) {
+                    hide(mCenteredView, View.INVISIBLE);
+                }
                 if (mCenteredIconView.getVisibility() != View.GONE) {
                     hide(mCenteredIconView, View.INVISIBLE);
                 }
@@ -296,8 +300,12 @@ public class HeadsUpAppearanceController implements OnHeadsUpChangedListener,
                     hide(mOperatorNameView, View.INVISIBLE);
                 }
             } else {
-                show(mCenterClock);
-                show(mCustomIconArea);
+                if (mCustomIconArea.getVisibility() != View.GONE) {
+                    show(mCustomIconArea);
+                }
+                if (mCenteredView.getVisibility() != View.GONE) {
+                    show(mCenteredView);
+                }
                 if (mCenteredIconView.getVisibility() != View.GONE) {
                     show(mCenteredIconView);
                 }
