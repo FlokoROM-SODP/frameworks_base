@@ -42,6 +42,7 @@ import android.provider.DeviceConfig;
 import android.provider.DeviceConfig.Properties;
 import android.provider.Settings;
 import android.service.notification.NotificationListenerService;
+import android.service.notification.StatusBarNotification;
 import android.util.ArraySet;
 import android.util.Log;
 import android.view.View;
@@ -66,7 +67,6 @@ import com.android.systemui.statusbar.notification.NotificationEntryManager;
 import com.android.systemui.statusbar.notification.collection.NotificationEntry;
 import com.android.systemui.statusbar.notification.collection.notifcollection.NotifCollectionListener;
 import com.android.systemui.statusbar.phone.BiometricUnlockController;
-import com.android.systemui.statusbar.phone.KeyguardBypassController;
 import com.android.systemui.statusbar.phone.LockscreenWallpaper;
 import com.android.systemui.statusbar.phone.NotificationShadeWindowController;
 import com.android.systemui.statusbar.phone.ScrimController;
@@ -109,7 +109,6 @@ public class NotificationMediaManager implements Dumpable, TunerService.Tunable,
     private final SysuiColorExtractor mColorExtractor = Dependency.get(SysuiColorExtractor.class);
     private final KeyguardStateController mKeyguardStateController = Dependency.get(
             KeyguardStateController.class);
-    private final KeyguardBypassController mKeyguardBypassController;
     private static final HashSet<Integer> PAUSED_MEDIA_STATES = new HashSet<>();
     static {
         PAUSED_MEDIA_STATES.add(PlaybackState.STATE_NONE);
@@ -208,14 +207,12 @@ public class NotificationMediaManager implements Dumpable, TunerService.Tunable,
             Lazy<NotificationShadeWindowController> notificationShadeWindowController,
             NotificationEntryManager notificationEntryManager,
             MediaArtworkProcessor mediaArtworkProcessor,
-            KeyguardBypassController keyguardBypassController,
             @Main DelayableExecutor mainExecutor,
             DeviceConfigProxy deviceConfig,
             MediaDataManager mediaDataManager,
             MediaFeatureFlag mediaFeatureFlag) {
         mContext = context;
         mMediaArtworkProcessor = mediaArtworkProcessor;
-        mKeyguardBypassController = keyguardBypassController;
         mMediaListeners = new ArrayList<>();
         // TODO: use MediaSessionManager.SessionListener to hook us up to future updates
         // in session state
@@ -431,11 +428,12 @@ public class NotificationMediaManager implements Dumpable, TunerService.Tunable,
     public void findAndUpdateMediaNotifications() {
         boolean metaDataChanged = false;
 
+        // Promote the media notification with a controller in 'playing' state, if any.
+        NotificationEntry mediaNotification = null;
+
         synchronized (mEntryManager) {
             Collection<NotificationEntry> allNotifications = mEntryManager.getAllNotifs();
 
-            // Promote the media notification with a controller in 'playing' state, if any.
-            NotificationEntry mediaNotification = null;
             MediaController controller = null;
             for (NotificationEntry entry : allNotifications) {
                 if (entry.isMediaNotification()) {
@@ -514,6 +512,17 @@ public class NotificationMediaManager implements Dumpable, TunerService.Tunable,
 
         if (metaDataChanged) {
             mEntryManager.updateNotifications("NotificationMediaManager - metaDataChanged");
+            if (PlaybackState.STATE_PLAYING ==
+                    getMediaControllerPlaybackState(mMediaController) &&
+                    mStatusBarLazy.get().isMusicTickerEnabled() &&
+                    mediaNotification != null && mMediaMetadata != null) {
+                StatusBarNotification entry = mediaNotification.getSbn();
+                mMainExecutor.executeDelayed(() -> {
+                    mStatusBarLazy.get().tick(entry, true, true, mMediaMetadata, null);
+                }, 600);
+            } else {
+                mStatusBarLazy.get().resetTrackInfo();
+            }
         }
 
         dispatchUpdateMediaMetaData(metaDataChanged, true /* allowEnterAnimation */);
@@ -627,7 +636,7 @@ public class NotificationMediaManager implements Dumpable, TunerService.Tunable,
         }
 
         Bitmap artworkBitmap = null;
-        if (mediaMetadata != null && !mKeyguardBypassController.getBypassEnabled()) {
+        if (mediaMetadata != null) {
             artworkBitmap = mediaMetadata.getBitmap(MediaMetadata.METADATA_KEY_ART);
             if (artworkBitmap == null) {
                 artworkBitmap = mediaMetadata.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART);
