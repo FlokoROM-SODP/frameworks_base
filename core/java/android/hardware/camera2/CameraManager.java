@@ -22,6 +22,7 @@ import android.annotation.Nullable;
 import android.annotation.RequiresPermission;
 import android.annotation.SystemService;
 import android.annotation.TestApi;
+import android.app.ActivityThread;
 import android.content.Context;
 import android.hardware.Camera;
 import android.hardware.CameraInfo;
@@ -44,6 +45,7 @@ import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.os.ServiceSpecificException;
 import android.os.SystemProperties;
+import android.text.TextUtils;
 import android.util.ArrayMap;
 import android.util.ArraySet;
 import android.util.Log;
@@ -2050,7 +2052,9 @@ public final class CameraManager {
                 // Tell listeners that the cameras and torch modes are unavailable and schedule a
                 // reconnection to camera service. When camera service is reconnected, the camera
                 // and torch statuses will be updated.
-                for (int i = 0; i < mDeviceStatus.size(); i++) {
+                // Iterate from the end to the beginning befcause onStatusChangedLocked removes
+                // entries from the ArrayMap.
+                for (int i = mDeviceStatus.size() - 1; i >= 0; i--) {
                     String cameraId = mDeviceStatus.keyAt(i);
                     onStatusChangedLocked(ICameraServiceListener.STATUS_NOT_PRESENT, cameraId);
                 }
