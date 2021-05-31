@@ -159,6 +159,7 @@ import lineageos.providers.LineageSettings;
 import org.lineageos.internal.util.PowerMenuUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -201,6 +202,8 @@ public class GlobalActionsDialog implements DialogInterface.OnDismissListener,
 
     private static final String POWER_MENU_ACTIONS_STRING =
             "lineagesecure:" + LineageSettings.Secure.POWER_MENU_ACTIONS;
+    private static final String POWER_MENU_BG_ALPHA =
+            "system:" + Settings.System.POWER_MENU_BG_ALPHA;
 
     private final Context mContext;
     private final GlobalActionsManager mWindowManagerFuncs;
@@ -222,6 +225,8 @@ public class GlobalActionsDialog implements DialogInterface.OnDismissListener,
     private final NotificationShadeDepthController mDepthController;
     private final SysUiState mSysUiState;
     private final LineageGlobalActions mLineageGlobalActions;
+
+    private int mPowerMenuBackgroundAlpha;
 
     // Used for RingerModeTracker
     private final LifecycleRegistry mLifecycle = new LifecycleRegistry(this);
@@ -445,7 +450,10 @@ public class GlobalActionsDialog implements DialogInterface.OnDismissListener,
                     }
                 });
 
-        Dependency.get(TunerService.class).addTunable(this, POWER_MENU_ACTIONS_STRING);
+
+        final TunerService tunerService = Dependency.get(TunerService.class);
+        tunerService.addTunable(this, POWER_MENU_ACTIONS_STRING);
+        tunerService.addTunable(this, POWER_MENU_BG_ALPHA);
 
         mActions = mLineageGlobalActions.getUserActionsArray();
     }
@@ -652,7 +660,10 @@ public class GlobalActionsDialog implements DialogInterface.OnDismissListener,
         CurrentUserProvider currentUser = new CurrentUserProvider();
 
         // make sure emergency affordance action is first, if needed
-        if (mEmergencyAffordanceManager.needsEmergencyAffordance()) {
+        boolean showEmergencyAffordance = Arrays.stream(mActions)
+                .anyMatch(GLOBAL_ACTION_KEY_EMERGENCY::equals);
+        if (showEmergencyAffordance &&
+                mEmergencyAffordanceManager.needsEmergencyAffordance()) {
             addIfShouldShowAction(tempActions, new EmergencyAffordanceAction());
             addedKeys.add(GLOBAL_ACTION_KEY_EMERGENCY);
         }
@@ -2016,6 +2027,7 @@ public class GlobalActionsDialog implements DialogInterface.OnDismissListener,
             View v = inflater.inflate(com.android.systemui.R.layout.global_actions_grid_item_v2,
                     parent, false /* attach */);
 
+            v.getBackground().setAlpha(mPowerMenuBackgroundAlpha);
             ImageView icon = v.findViewById(R.id.icon);
             TextView messageView = v.findViewById(R.id.message);
             messageView.setSelected(true); // necessary for marquee to work
@@ -2125,6 +2137,7 @@ public class GlobalActionsDialog implements DialogInterface.OnDismissListener,
             View v = inflater.inflate(com.android.systemui.R.layout.global_actions_grid_item_v2,
                     parent, false /* attach */);
 
+            v.getBackground().setAlpha(mPowerMenuBackgroundAlpha);
             ImageView icon = (ImageView) v.findViewById(R.id.icon);
             TextView messageView = (TextView) v.findViewById(R.id.message);
             final boolean enabled = isEnabled();
@@ -2355,8 +2368,18 @@ public class GlobalActionsDialog implements DialogInterface.OnDismissListener,
 
     @Override
     public void onTuningChanged(String key, String newValue) {
-        if (POWER_MENU_ACTIONS_STRING.equals(key)) {
-            mActions = mLineageGlobalActions.getUserActionsArray();
+        switch (key) {
+            case POWER_MENU_ACTIONS_STRING:
+                mActions =
+                        mLineageGlobalActions.getUserActionsArray();
+                break;
+            case POWER_MENU_BG_ALPHA:
+                mPowerMenuBackgroundAlpha =
+                        TunerService.parseInteger(newValue, 255);
+                GlobalActionsPowerDialog.mPowerMenuBackgroundAlpha = mPowerMenuBackgroundAlpha;
+                break;
+            default:
+                break;
         }
     }
 
@@ -2649,7 +2672,8 @@ public class GlobalActionsDialog implements DialogInterface.OnDismissListener,
             mPowerOptionsDialog.show();
         }
 
-        public void showRestartOptionsMenu() {
+        public void showRestartOptionsMenu() { 
+            dismissPowerOptions();
             mRestartOptionsDialog = GlobalActionsPowerDialog.create(
                     mContext, mRestartOptionsAdapter);
             mRestartOptionsDialog.show();
@@ -2849,9 +2873,9 @@ public class GlobalActionsDialog implements DialogInterface.OnDismissListener,
 
                 // close first, as popup windows will not fade during the animation
                 dismissOverflow(false);
-                dismissPowerOptions(false);
-                dismissRestartOptions(false);
-                dismissUsers(false);
+                dismissPowerOptions();
+                dismissRestartOptions();
+                dismissUsers();
                 if (mControlsUiController != null) mControlsUiController.closeDialogs(false);
             });
         }
@@ -2876,9 +2900,9 @@ public class GlobalActionsDialog implements DialogInterface.OnDismissListener,
             resetOrientation();
             dismissWallet();
             dismissOverflow(true);
-            dismissPowerOptions(true);
-            dismissRestartOptions(true);
-            dismissUsers(true);
+            dismissPowerOptions();
+            dismissRestartOptions();
+            dismissUsers();
             if (mControlsUiController != null) mControlsUiController.hide();
             mNotificationShadeWindowController.setRequestTopUi(false, TAG);
             mDepthController.updateGlobalDialogVisibility(0, null /* view */);
@@ -2905,33 +2929,21 @@ public class GlobalActionsDialog implements DialogInterface.OnDismissListener,
             }
         }
 
-        private void dismissPowerOptions(boolean immediate) {
+        private void dismissPowerOptions() {
             if (mPowerOptionsDialog != null) {
-                if (immediate) {
-                    mPowerOptionsDialog.dismiss();
-                } else {
-                    mPowerOptionsDialog.dismiss();
-                }
+                mPowerOptionsDialog.dismiss();
             }
         }
 
-        private void dismissRestartOptions(boolean immediate) {
+        private void dismissRestartOptions() {
             if (mRestartOptionsDialog != null) {
-                if (immediate) {
-                    mRestartOptionsDialog.dismiss();
-                } else {
-                    mRestartOptionsDialog.dismiss();
-                }
+                mRestartOptionsDialog.dismiss();
             }
         }
 
-        private void dismissUsers(boolean immediate) {
+        private void dismissUsers() {
             if (mUsersDialog != null) {
-                if (immediate) {
-                    mUsersDialog.dismiss();
-                } else {
-                    mUsersDialog.dismiss();
-                }
+                mUsersDialog.dismiss();
             }
         }
 
@@ -2978,9 +2990,9 @@ public class GlobalActionsDialog implements DialogInterface.OnDismissListener,
             // ensure dropdown menus are dismissed before re-initializing the dialog
             dismissWallet();
             dismissOverflow(true);
-            dismissPowerOptions(true);
-            dismissRestartOptions(true);
-            dismissUsers(true);
+            dismissPowerOptions();
+            dismissRestartOptions();
+            dismissUsers();
             if (mControlsUiController != null) {
                 mControlsUiController.hide();
             }
