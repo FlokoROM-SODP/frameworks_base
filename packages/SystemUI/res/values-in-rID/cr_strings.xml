@@ -248,4 +248,8 @@ Sembilan</string>
     <string name="guts_force_close_app">Paksa berhenti</string>
     <!-- Title for media output settings -->
     <string name="media_output_title">Putar media ke</string>
+    <!-- Mono audio tile -->
+    <string name="quick_settings_monotoggle_tile">Mode Audio</string>
+    <string name="quick_settings_monotoggle_tile_mono">Audio Mono</string>
+    <string name="quick_settings_monotoggle_tile_stereo">Audio Stereo</string>
 </resources>
