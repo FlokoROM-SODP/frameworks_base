@@ -29,9 +29,6 @@
   <!-- Whether device has VOOC charging support -->
   <java-symbol type="bool" name="config_hasVoocCharger" />
 
-  <!-- Device has OnePlus haptic motor -->
-  <java-symbol type="bool" name="config_hasOnePlusHapticMotor" />
-
   <!-- Gaming mode -->
   <java-symbol type="drawable" name="ic_gaming_notif" />
   <java-symbol type="string" name="notification_channel_gaming" />
@@ -61,6 +58,7 @@
 
   <!-- Pocket Service -->
   <java-symbol type="string" name="config_pocketJudgeVendorSensorName" />
+  <java-symbol type="string" name="config_pocketJudgeVendorProximitySensorName" />
 
   <!-- Whether the device supports Smart Pixels -->
   <java-symbol type="bool" name="config_supportSmartPixels" />
@@ -116,4 +114,6 @@
 
   <!-- Expected value from fast charging status file -->
   <java-symbol type="string" name="config_oemFastChargerStatusValue" />
+
+  <java-symbol type="bool" name="config_hasOnePlusHapticMotor" />
 </resources>

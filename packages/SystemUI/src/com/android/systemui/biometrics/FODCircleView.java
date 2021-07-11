@@ -210,6 +210,8 @@ public class FODCircleView extends ImageView implements TunerService.Tunable {
                 BiometricSourceType biometricSourceType) {
             if (biometricSourceType == BiometricSourceType.FINGERPRINT) {
                 mIsBiometricRunning = running;
+                if (!mIsBiometricRunning)
+                    hide();
             }
         }
 
@@ -218,11 +220,9 @@ public class FODCircleView extends ImageView implements TunerService.Tunable {
             mIsDreaming = dreaming;
             updateAlpha();
 
-            if (mIsKeyguard && mUpdateMonitor.isFingerprintDetectionRunning()) {
+            if (mIsKeyguard && mIsBiometricRunning) {
                 show();
                 updateAlpha();
-            } else {
-                hide();
             }
 
             if (dreaming) {
@@ -249,14 +249,12 @@ public class FODCircleView extends ImageView implements TunerService.Tunable {
         @Override
         public void onKeyguardBouncerChanged(boolean isBouncer) {
             mIsBouncer = isBouncer;
-            if (mUpdateMonitor.isFingerprintDetectionRunning()) {
+            if (mIsBiometricRunning) {
                 if (isPinOrPattern(mUpdateMonitor.getCurrentUser()) || !isBouncer) {
                     show();
                 } else {
                     hide();
                 }
-            } else {
-                hide();
             }
         }
 
@@ -272,19 +270,21 @@ public class FODCircleView extends ImageView implements TunerService.Tunable {
 
         @Override
         public void onStartedWakingUp() {
-            if (mUpdateMonitor.isFingerprintDetectionRunning()) {
+            if (mIsBiometricRunning) {
                 show();
             }
         }
 
         @Override
         public void onScreenTurnedOn() {
-            if (mUpdateMonitor.isFingerprintDetectionRunning() && !mFodGestureEnable) {
-                show();
-            } else if (mFodGestureEnable && mPressPending) {
-                mHandler.post(() -> showCircle());
-                mPressPending = false;
-            }
+            if (mIsBiometricRunning) {
+                if (!mFodGestureEnable) {
+                    show();
+                } else if (mPressPending) {
+                    mHandler.post(() -> showCircle());
+                    mPressPending = false;
+                }
+            }    
             mScreenTurnedOn = true;
         }
 
@@ -365,7 +365,6 @@ public class FODCircleView extends ImageView implements TunerService.Tunable {
 
         mWindowManager.addView(this, mParams);
 
-        updatePosition();
         hide();
 
         mLockPatternUtils = new LockPatternUtils(mContext);
