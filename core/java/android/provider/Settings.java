@@ -5438,12 +5438,6 @@ public final class Settings {
         public static final String TOAST_ICON = "toast_icon";
 
         /**
-         * Switch between different navbar styles
-         * @hide
-         */
-        public static final String NAVBAR_STYLE = "navbar_style";
-
-        /**
          * @hide
          */
         public static final String USE_OLD_MOBILETYPE = "use_old_mobiletype";
@@ -5459,7 +5453,7 @@ public final class Settings {
          * @hide
          */
         public static final String FOD_COLOR = "fod_color";
-        
+
         /**
          * FOD night light
          * @hide
